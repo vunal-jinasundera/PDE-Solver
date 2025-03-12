@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Symbolic Parabolic PDE Solver{% endblock %}</title>
+  <!-- Google Fonts: Raleway (400: regular, 700: bold) -->
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;700&display=swap" rel="stylesheet">
+  <!-- MathJax for LaTeX rendering -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+
+  <!-- Formatting: CSS Styles -->
+  <style>
+    :root {
+      --banner-color: #1D6EA7;
+      --text-color: #333333;
+      --background-color: #f4f4f4;
+      --container-bg: #ffffff;
+    }
+    /* Global Styles */
+    body {
+      margin: 0;
+      font-family: 'Raleway', sans-serif;
+      background: var(--background-color);
+      color: var(--text-color);
+    }
+    /* Container for page content */
+    .container {
+      max-width: 960px;
+      margin: 2rem auto;
+      background: var(--container-bg);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  {% include "header.html" %}
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

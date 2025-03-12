@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% include "pde_equation.html" %}
+  {% include "form.html" %}
+  {% include "results.html" %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.getElementById('pdeForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = {
+      alpha: formData.get('α'),
+      B: formData.get('β'),
+      C: formData.get('γ'),
+      initial_condition: formData.get('initial_condition')
+    };
+    fetch('/solve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+      document.getElementById('latexOutput').innerHTML = "$$" + result.latex_solution + "$$";
+      MathJax.typesetPromise();
+      if (result.plot_img) {
+        document.getElementById('plotImage').src = "data:image/png;base64," + result.plot_img;
+      } else {
+        document.getElementById('plotImage').alt = "No plot image available.";
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      document.getElementById('latexOutput').innerText = 'Error computing solution.';
+      document.getElementById('plotImage').alt = "Error generating plot.";
+    });
+  });
+</script>
+{% endblock %}

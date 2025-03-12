@@ -1,52 +1,34 @@
+# inputs.py
 import sympy as sp
-from sympy import symbols
-from sympy import lambdify
-from sympy import sympify
 
 
-
-def get_user_equation():
+def get_initial_condition(user_input=None):
     """
-    Prompt the user for the coefficients of the PDE.
+    Convert the user input into a symbolic expression.
+    Raises a ValueError if the input cannot be parsed properly.
     """
-    print("Enter the coefficients for the PDE in the form:")
-    print("∂u/∂t = a(x) * ∂²u/∂x² + b(x) * ∂u/∂x + c(x) * u(x, t)")
-
-    a_input = input("a(x) = ")
-    b_input = input("b(x) = ")
-    c_input = input("c(x) = ")
-
     x = sp.symbols('x')
-    a_expr = sp.sympify(a_input)
-    b_expr = sp.sympify(b_input)
-    c_expr = sp.sympify(c_input)
+    if user_input is None:
+        user_input = "sin((pi/10)*x)"
+    try:
+        f_expr = sp.sympify(user_input)
+    except Exception as e:
+        raise ValueError("Invalid initial condition input: " + str(e))
 
-    # Convert to functions
-    a_func = sp.lambdify(x, a_expr, 'numpy')
-    b_func = sp.lambdify(x, b_expr, 'numpy')
-    c_func = sp.lambdify(x, c_expr, 'numpy')
+    # Check that the expression actually depends on x (or is a valid constant)
+    if not hasattr(f_expr, 'free_symbols'):
+        raise ValueError("The initial condition must be a valid symbolic expression in x.")
 
-    return a_func, b_func, c_func
+    return f_expr
 
-
-def get_initial_condition():
+def get_parameters(data):
     """
-    Prompt the user for the initial condition function f(x).
+    Extracts and converts PDE parameters from the provided data dictionary.
     """
-    print("Enter the initial condition function f(x) (use 'x' as the variable, e.g., 'sin(pi*x)', 'x*(1-x)', etc.):")
-    user_input = input("f(x) = ")
-    x = sp.symbols('x')
-    f_expr = sp.sympify(user_input)
-    return sp.lambdify(x, f_expr, 'numpy')
-
-
-def get_parameters():
-    """
-    Prompt the user for domain length, diffusion coefficient, and numerical parameters.
-    """
-    L = float(input("Enter the length of the domain (L): "))
-    alpha = float(input("Enter the diffusion coefficient (alpha): "))
-    n_terms = int(input("Enter the number of Fourier terms to use (n_terms): "))
-    time_steps = int(input("Enter the number of time steps to calculate: "))
-    t_max = float(input("Enter the maximum time (t_max): "))
-    return L, alpha, n_terms, time_steps, t_max
+    alpha = float(data.get('alpha', 0.0025))
+    B = float(data.get('B', 0))
+    C = float(data.get('C', 0))
+    time_steps = 25000
+    t_max = 1300
+    d_x = 1000
+    return alpha, B, C, time_steps, t_max, d_x

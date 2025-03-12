@@ -1,42 +1,46 @@
+# solver.py
+import sympy as sp
 import numpy as np
-import scipy as sp
-from sympy.abc import x, t
-from sympy import symbols
-from sympy import lambdify
-from sympy import sympify
+from scipy.signal import fftconvolve
 
 
-def compute_coefficients(n, L, f):
+def greens_function(x, xi, t, tau, A, B, C):
     """
-    Compute the Fourier coefficients symbolically using sympy.
+    Returns the Green's function for the parabolic PDE.
     """
-    sin_term = sp.sin(n * np.pi * x / L)
-    integral = sp.integrate(f(x) * sin_term, (x, 0, L))
-    return (2 / L) * integral
+    if t == tau:
+        return sp.DiracDelta(x - xi)
+    else:
+        return (1 / sp.sqrt(4 * sp.pi * A * (t - tau))) * sp.exp(-((x - xi - B * (t - tau)) ** 2) / (4 * A * (t - tau)))
 
 
-def solve_pde(L, alpha, n_terms, time_steps, t_max, f):
+def solve_pde_greens(alpha, B, C, time_steps, t_max, f_expr, d_x):
     """
-    Solve the parabolic PDE symbolically using separation of variables.
+    Solves the parabolic PDE using a Green's function approach.
+    Returns the spatial grid, time grid, numerical solution, and symbolic solution.
     """
-    x_vals = np.linspace(0, L, 100)
+    # Define symbolic variables
+    x, xi, t, tau = sp.symbols('x xi t tau')
+    # Compute the symbolic Green's function
+    G_xt = greens_function(x, xi, t, tau, alpha, B, C)
+    # Compute the convolution integral symbolically
+    u_xt = sp.integrate(G_xt * f_expr.subs(x, xi), (xi, -sp.oo, sp.oo))
+    symbolic_solution = sp.simplify(u_xt)
+
+    # Numerical evaluation
+    f_func = sp.lambdify(x, f_expr, 'numpy')
+    L = 10  # Use a large domain to approximate infinity
+    x_vals = np.linspace(-L, L, d_x)
     t_vals = np.linspace(0, t_max, time_steps)
+    f_samples = f_func(x_vals)
     u = np.zeros((len(x_vals), len(t_vals)))
 
+    for j, t_val in enumerate(t_vals):
+        if t_val == 0:
+            u[:, j] = f_samples
+        else:
+            G_t = sp.lambdify(x, greens_function(x, 0, t_val, 0, alpha, B, C).evalf(), 'numpy')
+            G_samples = G_t(x_vals)
+            u[:, j] = fftconvolve(f_samples, G_samples, mode='same') * (x_vals[1] - x_vals[0])
 
-    for n in range(1, n_terms + 1):
-        # Compute eigenvalue and Fourier coefficient
-        lambda_n = (n * np.pi / L) ** 2
-        C_n = compute_coefficients(n, L, f)
-
-        # Construct the symbolic solution for each term
-        X_n = sp.sin(n * np.pi * x / L)
-        T_n = sp.exp(-alpha * lambda_n * t)
-        u_n = C_n * X_n * T_n
-
-        # Evaluate the solution numerically
-        for i, x_val in enumerate(x_vals):
-            for j, t_val in enumerate(t_vals):
-                u[i, j] += float(u_n.subs({x: x_val, t: t_val}))
-
-    return x_vals, t_vals, u
+    return x_vals, t_vals, u, symbolic_solution
